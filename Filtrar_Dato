@@ -1,0 +1,30 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date:    18:50:21 08/28/2015 
+// Design Name: 
+// Module Name:    Filtrar_Dato 
+// Project Name: 
+// Target Devices: 
+// Tool versions: 
+// Description: 
+//
+// Dependencies: 
+//
+// Revision: 
+// Revision 0.01 - File Created
+// Additional Comments: 
+//
+//////////////////////////////////////////////////////////////////////////////////
+module Dato_Filtrado( input enb, reset, [7:0] D_in, 
+output reg [7:0] D_out );
+
+always @ (posedge enb or posedge reset)
+	if (reset)
+	D_out <= 7'b0;
+	else
+	D_out <= D_in;
+	
+endmodule
