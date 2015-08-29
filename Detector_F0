@@ -1,0 +1,84 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Tecnológico de Costa Rica
+// Engineer: Yendri González
+// Create Date:    02:01:15 08/10/2015 
+// Module Name:    MaquinaEstados del Detector de F0 
+// Project Name: Detector de Incendio ingresando señales por medio de teclado
+// Description: Detector F0 y Habilitador para Cargar Dato filtrado a registro.
+//
+//////////////////////////////////////////////////////////////////////////////////
+module Detector_F0(
+input clk, rst, rx,[7:0] D_in, //// rx = rx_done_tick, dato listo. D_in = dato que sale del PS2 CONTROL
+output reg Enb);// Enb señal de control para cargAR DATO a registro.
+wire F_0;
+reg [7:0]Tecla;
+
+///////////////////Registro paralelo paralelo, carga dato cada vez que dato está listo rx_done_tick
+always @ (posedge rx or posedge rst)
+	if (rst)
+	Tecla <= 7'b0;
+	else
+	Tecla <= D_in;
+
+assign F_0 = (Tecla == 8'b11110000);
+////////////////////////////////////////////////////////////////////////////////////
+
+localparam [1:0] // Codificación de los estados o etiquetas
+	Empezar = 2'b00,
+	Espera = 2'b01,
+	Termina = 2'b10;
+
+reg [1:0] state, state_next; // Reg, estado actual y siguiente
+
+//+++++++++++Parte Secuencial++++++++++++++++++++++++++++++++++++++++++
+
+always@(posedge clk, posedge rst)
+begin
+	if(rst)	
+		state <= Empezar;			
+	else	
+		state <= state_next;
+end
+
+//++++++++++++++++Parte Combinacional++++++++++++++++++++++++++++++++++++++++++++++++
+always@*
+begin		
+	 Enb = 1'b0;
+	case(state)
+///////////////////////////////////////////////////
+		Empezar:                 
+			begin
+				Enb = 1'b0;
+			 if (F_0)
+				state_next = Espera;
+			 else
+				state_next = Empezar;				
+			end
+/////////////////////////////////////////////////////////	
+		Espera:
+		begin
+			if (F_0)
+				state_next = Espera;
+			else
+				state_next = Termina;					
+		end		
+//////////////////////////////////////////////////////////////						
+		Termina:
+				begin
+				Enb = 1'b1;
+				state_next = Empezar;
+				end
+
+////////////////////////////////////////////////////////////////	
+		default: state_next = Empezar;
+	endcase
+end
+
+endmodule
+
+
+
+
+
+
