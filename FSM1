@@ -1,0 +1,201 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date:    21:32:49 08/02/2015 
+// Design Name: 
+// Module Name:    MaquinaEstados 
+// Project Name: 
+// Target Devices: 
+// Tool versions: 
+// Description: 
+//
+// Dependencies: 
+//
+// Revision: 
+// Revision 0.01 - File Created
+// Additional Comments: 
+//
+//////////////////////////////////////////////////////////////////////////////////
+module MaquinaEstados(
+input clk, rst,// Clock, reset....Entradas Gas y Humo
+input [4:0] Tv, // Temperatura variable
+input G, H, sc,////Condiciones de Estado
+output reg Ventilador,Aspersor, Alarma, Rele,/// Salidas para activar funciones
+output [7:0] led_sal,
+output [3:0] an_sal
+    );
+wire GH = G|H; ///Condición de Estado
+wire Talta;
+////////////////////////////////////////////////////////////////////////////////////
+
+localparam [1:0] // Codificación de los estados o etiquetas
+	Inicio = 2'b00,
+	Temperatura = 2'b01,
+	Gas_Humo = 2'b10,
+	Emergencia = 2'b11;
+
+
+
+	
+reg flag_Ventilador, flag_Aspersor;
+reg [1:0] state, state_next; // Reg, estado actual y siguiente
+reg [3:0] L1,L2,L3,L4;
+
+
+// Instantiate the module
+sevenseg instance_name (
+    .clock(clk), 
+    .reset(rst), 
+    .in0(L1), 
+    .in1(L2), 
+    .in2(L3), 
+    .in3(L4), 
+    .a(led_sal[0]), 
+    .b(led_sal[1]), 
+    .c(led_sal[2]), 
+    .d(led_sal[3]), 
+    .e(led_sal[4]), 
+    .f(led_sal[5]), 
+    .g(led_sal[6]), 
+    .dp(led_sal[7]), 
+    .an(an_sal)
+    );
+
+// Instantiate the module
+Temp87 instance_name2 (
+    .Temp(Tv), 
+    .Temp_Flag(Talta)
+    );
+
+// Instantiate the module
+Divisor instance_name3 (
+    .clk(clk), 
+    .reset(rst), 
+    .s_clk(s_clk) 
+    );
+//+++++++++++Parte Secuencial++++++++++++++++++++++++++++++++++++++++++
+
+always@(posedge s_clk, posedge rst)
+begin
+	if(rst)
+		begin
+		state <= Inicio;
+		Ventilador <= 1'b0;
+		Aspersor <= 1'b0;
+		
+		end
+	else
+		begin
+		state <= state_next;
+		Ventilador <= Ventilador|flag_Ventilador;
+		Aspersor <= Aspersor| flag_Aspersor;
+		end
+end
+
+//++++++++++++++++Parte Combinacional++++++++++++++++++++++++++++++++++++++++++++++++
+always@*
+begin
+			Alarma=1'b0;
+			flag_Aspersor=1'b0; 
+			flag_Ventilador=1'b0;     
+			Rele=1'b0;	
+			L1= 4'd10;
+			L2= 4'd10;
+			L3= 4'd10;
+			L4= 4'd10;
+			
+	case(state)
+	Inicio:                 
+			begin
+				Alarma=1'b0;
+				flag_Ventilador=1'b0;
+				flag_Aspersor=1'b0;
+				Rele=1'b0;
+				
+				L1= 4'd5;
+				L2= 4'd7;
+				L3= 4'd7;
+				L4= 4'd2;
+				
+				if(sc)
+					state_next = Emergencia;			
+				else
+					state_next = Temperatura;			
+			end
+	
+		Temperatura:
+		begin
+			L1= 4'd5;
+			L2= 4'd7;
+			L3= 4'd7;
+			L4= 4'd2;				
+			if(Talta)
+				begin
+					state_next = Emergencia;
+					flag_Aspersor = 1'b1;
+				end
+			else
+				state_next = Gas_Humo;			
+		end
+			
+		Gas_Humo:
+		begin
+			L1= 4'd5;
+			L2= 4'd7;
+			L3= 4'd7;
+			L4= 4'd2;
+			
+			if(GH)
+				begin
+					state_next = Emergencia;
+					flag_Ventilador = 1'b1;
+				end
+			else
+				state_next = Inicio;			
+		end
+			
+		Emergencia:
+			begin
+				if(H == 1'b1)    ///// Esta serie de If se encargan de enviar la información al control del BCD
+					begin				/// CON EL OBJETIVO DE ENCENDER UNA MENSAJE DEPENDIENDO DE LA ALERTA PRESENTE 
+						L1= 4'd0;
+						L2= 4'd6;  
+						L3= 4'd9;
+						L4= 4'd11;
+					end
+				if(G == 1'b1)
+					begin
+						L1= 4'd0;
+						L2= 4'd6;
+						L3= 4'd9;
+						L4= 4'd5;
+					end
+				if(Talta == 1'b1)
+					begin
+						L1= 4'd3;
+						L2= 4'd9;
+						L3= 4'd9;
+						L4= 4'd4;
+					end
+				if(sc == 1'b1)
+					begin
+						L1= 4'd8;
+						L2= 4'd10;
+						L3= 4'd1;
+						L4= 4'd10;
+					end
+				
+				Rele = 1'b1;		//// Activación de la señal para cortor ell suministro de corriente
+				Alarma = 1'b1;		/// Activación de la alarma sonora
+				
+					if(rst)
+						state_next = Inicio;
+					else
+						state_next = Emergencia;
+			end
+		default: state_next = Inicio;
+	endcase
+end
+endmodule 
