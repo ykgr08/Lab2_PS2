@@ -18,16 +18,16 @@
 // Additional Comments: 
 //
 //////////////////////////////////////////////////////////////////////////////////
-module MaquinaEstados(
+module Maquina_Estados(
 input clk, rst,// Clock, reset....Entradas Gas y Humo
-input [4:0] Tv, // Temperatura variable
+input Tv, // Temperatura variable
 input G, H, sc,////Condiciones de Estado
 output reg Ventilador,Aspersor, Alarma, Rele,/// Salidas para activar funciones
 output [7:0] led_sal,
 output [3:0] an_sal
     );
 wire GH = G|H; ///Condición de Estado
-wire Talta;
+
 ////////////////////////////////////////////////////////////////////////////////////
 
 localparam [1:0] // Codificación de los estados o etiquetas
@@ -37,15 +37,13 @@ localparam [1:0] // Codificación de los estados o etiquetas
 	Emergencia = 2'b11;
 
 
-
-	
 reg flag_Ventilador, flag_Aspersor;
 reg [1:0] state, state_next; // Reg, estado actual y siguiente
 reg [3:0] L1,L2,L3,L4;
 
 
 // Instantiate the module
-sevenseg instance_name (
+sevenseg sevenseg (
     .clock(clk), 
     .reset(rst), 
     .in0(L1), 
@@ -64,13 +62,7 @@ sevenseg instance_name (
     );
 
 // Instantiate the module
-Temp87 instance_name2 (
-    .Temp(Tv), 
-    .Temp_Flag(Talta)
-    );
-
-// Instantiate the module
-Divisor instance_name3 (
+Divisor Divisor_Frecuencia (
     .clk(clk), 
     .reset(rst), 
     .s_clk(s_clk) 
@@ -131,7 +123,7 @@ begin
 			L2= 4'd7;
 			L3= 4'd7;
 			L4= 4'd2;				
-			if(Talta)
+			if(Tv)
 				begin
 					state_next = Emergencia;
 					flag_Aspersor = 1'b1;
@@ -172,7 +164,7 @@ begin
 						L3= 4'd9;
 						L4= 4'd5;
 					end
-				if(Talta == 1'b1)
+				if(Tv == 1'b1)
 					begin
 						L1= 4'd3;
 						L2= 4'd9;
