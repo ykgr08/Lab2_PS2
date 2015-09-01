@@ -1,0 +1,72 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date:    13:51:34 09/01/2015 
+// Design Name: 
+// Module Name:    Obtener_Entradas 
+// Project Name: 
+// Target Devices: 
+// Tool versions: 
+// Description: 
+//
+// Dependencies: 
+//
+// Revision: 
+// Revision 0.01 - File Created
+// Additional Comments: 
+//
+//////////////////////////////////////////////////////////////////////////////////
+module Obtener_Entradas(	 
+	 input wire clk, reset,
+	 input wire ps2d, ps2c, rx_en,
+	 output Temperatura,Gas,Humo,Sc,
+	 output [10:0]b_regO1
+   );
+
+wire rx_done_tick;
+wire [7:0] dout;
+wire enb;	
+wire [7:0]Dato;
+
+// Instantiate the module
+ps2_rx Protocolo (
+    .clk(clk), 
+    .reset(reset), 
+    .ps2d(ps2d), 
+    .ps2c(ps2c), 
+    .rx_en(rx_en), 
+    .rx_done_tick(rx_done_tick), 
+    .dout(dout), 
+    .b_regO(b_regO1)
+    );
+	 
+// Instantiate the module
+Detector_F0 Habilitar_Reg (
+    .clk(clk), 
+    .rst(reset), 
+    .rx(rx_done_tick), 
+    .D_in(dout), 
+    .Enb(enb)
+    );
+
+// Instantiate the module
+Dato_Filtrado Tecla(
+    .enb(enb), 
+    .reset(reset), 
+    .D_in(dout), 
+    .D_out(Dato)
+    );
+
+
+// Instantiate the module
+Deco_Out_In Salidas (
+    .Dato(Dato), 
+    .Temp_Flag(Temperatura), 
+    .SC_Flag(Sc), 
+    .Smoke_Flag(Humo), 
+    .Gas_Flag(Gas)
+    );
+
+endmodule
