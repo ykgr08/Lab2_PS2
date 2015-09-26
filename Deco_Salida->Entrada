@@ -35,3 +35,5 @@ assign Smoke_Flag = (Dato == Smoke1);
 assign Gas_Flag = (Dato == Gas1);
 
 endmodule
+/////gggg
+///Ggg
